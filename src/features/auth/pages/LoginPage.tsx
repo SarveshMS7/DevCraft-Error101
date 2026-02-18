@@ -4,17 +4,21 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
-import { useSearchParams, Link } from 'react-router-dom';
+import { useSearchParams, Link, useNavigate, Navigate } from 'react-router-dom';
 import { Github } from 'lucide-react';
 
 export function LoginPage() {
-    const { signInWithGithub, signInWithGoogle, signInWithEmail, signUpWithEmail } = useAuth();
+    const { signInWithGithub, signInWithGoogle, signInWithEmail, signUpWithEmail, user } = useAuth();
     const [loading, setLoading] = useState(false);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const { toast } = useToast();
     const [searchParams] = useSearchParams();
+    const navigate = useNavigate();
     const isRegister = searchParams.get('tab') === 'register';
+
+    // Already logged in → go straight to home
+    if (user) return <Navigate to="/" replace />;
 
     const handleGithubLogin = async () => {
         try {
@@ -62,15 +66,19 @@ export function LoginPage() {
             if (isRegister) {
                 await signUpWithEmail(email, password);
                 toast({
-                    title: "Success",
-                    description: "Check your email for confirmation link",
+                    title: "Account created! 🎉",
+                    description: "Please sign in with your new account.",
                 });
+                // After sign up → redirect to login
+                navigate('/login');
             } else {
                 await signInWithEmail(email, password);
                 toast({
-                    title: "Success",
-                    description: "Logged in successfully",
+                    title: "Welcome back! 👋",
+                    description: "You've been signed in successfully.",
                 });
+                // After sign in → redirect to home
+                navigate('/');
             }
         } catch (error: any) {
             toast({
