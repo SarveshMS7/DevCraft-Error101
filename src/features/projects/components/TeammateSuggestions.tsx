@@ -402,8 +402,26 @@ function SuggestionCard({
                                     <ScoreBar label="GitHub Languages" value={details.githubLanguageScore} />
                                     <ScoreBar label="Repo Relevance" value={details.repoRelevanceScore} />
                                     <ScoreBar label="Complementary" value={details.complementaryScore} />
+                                    <ScoreBar label="Credibility" value={details.credibilityScore} />
                                 </div>
                             </div>
+
+                            {/* Credibility Badge */}
+                            {suggestion.credibility && (
+                                <div className="flex items-center gap-2">
+                                    <h5 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                                        Credibility
+                                    </h5>
+                                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${suggestion.credibility.label === 'Elite' ? 'bg-violet-500/15 text-violet-500 border border-violet-500/30' :
+                                            suggestion.credibility.label === 'Trusted' ? 'bg-emerald-500/15 text-emerald-500 border border-emerald-500/30' :
+                                                suggestion.credibility.label === 'Promising' ? 'bg-amber-500/15 text-amber-500 border border-amber-500/30' :
+                                                    suggestion.credibility.label === 'Emerging' ? 'bg-sky-500/15 text-sky-500 border border-sky-500/30' :
+                                                        'bg-slate-500/15 text-slate-400 border border-slate-500/30'
+                                        }`}>
+                                        {suggestion.credibility.label} ({suggestion.credibility.finalRankScore})
+                                    </span>
+                                </div>
+                            )}
 
                             {/* Missing Skills */}
                             {details.missingSkills.length > 0 && (

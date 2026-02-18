@@ -1,3 +1,5 @@
+import { CredibilitySummary } from '@/services/credibility/types';
+
 /** Result from the teammate matching engine */
 export interface MatchResult {
     userId: string;
@@ -6,6 +8,8 @@ export interface MatchResult {
     confidence: number;       // 0-1 confidence in the match
     label: 'Excellent' | 'Good' | 'Fair' | 'Low';
     details: TeammateMatchDetails;
+    /** Credibility data (populated when available) */
+    credibility?: CredibilitySummary;
 }
 
 /** Breakdown of match scoring components */
@@ -14,15 +18,17 @@ export interface TeammateMatchDetails {
     githubLanguageScore: number;     // 0-100
     repoRelevanceScore: number;      // 0-100
     complementaryScore: number;      // 0-100
+    credibilityScore: number;        // 0-100 (from credibility engine)
     missingSkills: string[];
 }
 
 /** Weights for teammate matching (total = 1.0) */
 export const TEAMMATE_SCORE_WEIGHTS = {
-    skillOverlap: 0.45,        // Direct skill match
-    githubLanguage: 0.20,      // GitHub language frequency
-    repoRelevance: 0.15,       // Repo name relevance
-    complementary: 0.20,       // Adjacent/related skills
+    skillOverlap: 0.35,        // Direct skill match (was 0.45, reduced)
+    githubLanguage: 0.15,      // GitHub language frequency (was 0.20)
+    repoRelevance: 0.10,       // Repo name relevance (was 0.15)
+    complementary: 0.15,       // Adjacent/related skills (was 0.20)
+    credibility: 0.25,         // NEW: credibility score from 5-pillar engine
 } as const;
 
 /** Input for the matching engine */
@@ -41,4 +47,6 @@ export interface MatchCandidate {
     githubLanguages?: Record<string, number>;
     githubTopics?: string[];
     githubRepoNames?: string[];
+    /** Pre-fetched credibility summary (optional, computed by service) */
+    credibility?: CredibilitySummary;
 }

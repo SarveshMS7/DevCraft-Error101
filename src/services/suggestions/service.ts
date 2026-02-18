@@ -2,11 +2,13 @@
  * Teammate Suggestion Service
  *
  * Orchestrates fetching project data, candidate users, GitHub skills,
- * and the matching engine to produce ranked teammate suggestions.
+ * credibility scores, and the matching engine to produce ranked
+ * teammate suggestions.
  */
 
 import { supabase } from '@/lib/supabase';
 import { githubService } from '@/services/github/api';
+import { getBatchCredibilitySummaries } from '@/services/credibility/service';
 import { rankCandidates, extractKeywords } from '@/services/matching/teammate-engine';
 import { MatchCandidate, MatchingEngineInput, MatchResult } from '@/services/matching/teammate-types';
 
@@ -34,8 +36,9 @@ const MAX_SUGGESTIONS = 20;
  * 3. Exclude users already in the team (project_members).
  * 4. Exclude users already invited (project_invites).
  * 5. Enrich candidates with GitHub data (cached).
- * 6. Run the matching engine.
- * 7. Return top 10-20 candidates with profile data.
+ * 6. Fetch credibility scores (batch, cached).
+ * 7. Run the matching engine.
+ * 8. Return top N candidates with profile data.
  */
 export async function getSuggestedTeammates(projectId: string): Promise<SuggestedTeammate[]> {
     // 1. Fetch project
@@ -90,6 +93,10 @@ export async function getSuggestedTeammates(projectId: string): Promise<Suggeste
     );
 
     // 5. Enrich with GitHub data (parallel, with caching)
+    // 6. Fetch credibility scores in batch
+    const eligibleIds = eligibleProfiles.map((p: any) => p.id);
+    const credibilityMap = await getBatchCredibilitySummaries(eligibleIds);
+
     const candidates: MatchCandidate[] = await Promise.all(
         eligibleProfiles.map(async (profile: any) => {
             let githubLanguages: Record<string, number> = {};
@@ -118,11 +125,12 @@ export async function getSuggestedTeammates(projectId: string): Promise<Suggeste
                 githubLanguages,
                 githubTopics,
                 githubRepoNames,
+                credibility: credibilityMap.get(profile.id),
             };
         })
     );
 
-    // 6. Run matching engine
+    // 7. Run matching engine (now includes credibility as 5th dimension)
     const input: MatchingEngineInput = {
         projectId,
         requiredSkills,
@@ -132,7 +140,7 @@ export async function getSuggestedTeammates(projectId: string): Promise<Suggeste
 
     const ranked = rankCandidates(candidates, input);
 
-    // 7. Merge with profile data and return top N
+    // 8. Merge with profile data and return top N
     const profileMap = new Map(eligibleProfiles.map((p: any) => [p.id, p]));
     const suggestions: SuggestedTeammate[] = ranked
         .slice(0, MAX_SUGGESTIONS)

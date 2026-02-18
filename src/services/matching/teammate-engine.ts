@@ -5,10 +5,11 @@
  * Designed to be replaceable with AI-based ranking in the future.
  *
  * Scoring components:
- * - Skill overlap (45%): Direct match between user skills and project requirements
- * - GitHub language frequency (20%): Languages from GitHub repos
- * - Repository relevance (15%): Repo names matching project keywords
- * - Complementary skills (20%): Related/adjacent skills bonus
+ * - Skill overlap (35%): Direct match between user skills and project requirements
+ * - GitHub language frequency (15%): Languages from GitHub repos
+ * - Repository relevance (10%): Repo names matching project keywords
+ * - Complementary skills (15%): Related/adjacent skills bonus
+ * - Credibility (25%): 5-pillar credibility score from the credibility engine
  */
 
 import {
@@ -140,6 +141,8 @@ function getTeammateScoreLabel(score: number): MatchResult['label'] {
 /**
  * Score a single candidate against a project's requirements.
  * Returns a MatchResult with score, matched skills, and details.
+ *
+ * Now includes credibility as a 5th scoring dimension (25%).
  */
 export function scoreCandidate(
     candidate: MatchCandidate,
@@ -180,27 +183,38 @@ export function scoreCandidate(
         input.requiredSkills
     );
 
+    // 5. Credibility score (from pre-fetched data or fallback)
+    const credibilityScore = candidate.credibility?.finalRankScore ?? 0;
+
     // Weighted final score
     const finalScore = Math.round(
         (skillOverlapScore * TEAMMATE_SCORE_WEIGHTS.skillOverlap) +
         (githubLanguageScore * TEAMMATE_SCORE_WEIGHTS.githubLanguage) +
         (repoRelevanceScore * TEAMMATE_SCORE_WEIGHTS.repoRelevance) +
-        (complementaryScore * TEAMMATE_SCORE_WEIGHTS.complementary)
+        (complementaryScore * TEAMMATE_SCORE_WEIGHTS.complementary) +
+        (credibilityScore * TEAMMATE_SCORE_WEIGHTS.credibility)
     );
 
     const clampedScore = Math.min(100, Math.max(0, finalScore));
 
-    // Confidence: higher when we have more data
+    // Confidence: higher when we have more data (enhanced with credibility signal)
     const hasGithub = candidate.githubUsername ? 1 : 0;
     const hasSkills = profileSkills.length > 0 ? 1 : 0;
     const hasTopics = (candidate.githubTopics?.length || 0) > 0 ? 1 : 0;
-    const confidence = (hasGithub * 0.3 + hasSkills * 0.5 + hasTopics * 0.2);
+    const hasCredibility = candidate.credibility ? 1 : 0;
+    const confidence = (
+        hasGithub * 0.2 +
+        hasSkills * 0.35 +
+        hasTopics * 0.15 +
+        hasCredibility * 0.3
+    );
 
     const details: TeammateMatchDetails = {
         skillOverlapScore,
         githubLanguageScore,
         repoRelevanceScore,
         complementaryScore,
+        credibilityScore,
         missingSkills,
     };
 
@@ -211,6 +225,7 @@ export function scoreCandidate(
         confidence,
         label: getTeammateScoreLabel(clampedScore),
         details,
+        credibility: candidate.credibility,
     };
 }
 
