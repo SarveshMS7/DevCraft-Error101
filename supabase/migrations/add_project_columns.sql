@@ -1,5 +1,9 @@
--- Migration: Add missing columns to projects table
+-- Migration: Add ALL missing columns to projects table
 -- Run this in your Supabase Dashboard → SQL Editor
+
+-- Add urgency column (if it doesn't already exist)
+ALTER TABLE projects
+  ADD COLUMN IF NOT EXISTS urgency text CHECK (urgency IN ('low', 'medium', 'high')) DEFAULT 'medium';
 
 -- Add team_size column (if it doesn't already exist)
 ALTER TABLE projects

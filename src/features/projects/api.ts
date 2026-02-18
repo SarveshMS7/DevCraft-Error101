@@ -24,19 +24,18 @@ export const projectsApi = {
     },
 
     async create(project: CreateProjectDTO) {
-        // Explicitly build the insert payload with only known columns
-        // to avoid "column not found in schema cache" errors
+        // Explicitly build the insert payload with only the columns
+        // that exist in the original DB schema (no migrations needed)
         const payload: Record<string, unknown> = {
             title: project.title,
             description: project.description,
             owner_id: project.owner_id,
             required_skills: project.required_skills ?? [],
-            urgency: project.urgency ?? 'medium',
             status: project.status ?? 'open',
         }
 
-        // Only include optional columns if they have a value
-        // (these require the migration to have been run first)
+        // These columns require the migration (add_project_columns.sql) to have been run
+        if (project.urgency !== undefined) payload.urgency = project.urgency
         if (project.team_size !== undefined) payload.team_size = project.team_size
         if ((project as any).github_url) payload.github_url = (project as any).github_url
         if ((project as any).image_url) payload.image_url = (project as any).image_url
