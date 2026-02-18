@@ -32,14 +32,18 @@ export function useProjectDetail(projectId: string) {
     };
 
     const loadMessages = async () => {
-        const { data, error } = await supabase
-            .from('messages')
-            .select('*')
-            .eq('project_id', projectId)
-            .order('created_at', { ascending: true });
+        try {
+            const { data, error } = await supabase
+                .from('messages')
+                .select('*')
+                .eq('project_id', projectId)
+                .order('created_at', { ascending: true });
 
-        if (error) console.error('Error loading messages:', error);
-        else setMessages(data || []);
+            if (error) console.error('Error loading messages:', error);
+            else setMessages(data || []);
+        } catch (err) {
+            console.error('messages table may not exist yet:', err);
+        }
     };
 
     const loadJoinRequests = async () => {
