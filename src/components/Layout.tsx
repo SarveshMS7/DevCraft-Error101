@@ -32,15 +32,8 @@ export function Layout() {
                         >
                             Explore Projects
                         </Link>
-                        {user && (
-                            <Link
-                                to="/profile"
-                                className={`text-sm font-medium transition-colors hover:text-primary ${location.pathname === '/profile' ? 'text-primary' : 'text-muted-foreground'
-                                    }`}
-                            >
-                                My Profile
-                            </Link>
-                        )}
+
+
                     </nav>
 
                     <div className="flex items-center gap-4">
