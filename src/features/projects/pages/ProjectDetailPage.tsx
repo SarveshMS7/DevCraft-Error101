@@ -8,7 +8,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import {
-    Github,
     MessageSquare,
     UserPlus,
     ArrowLeft,
@@ -159,8 +158,8 @@ export function ProjectDetailPage() {
                                     messages.map((msg) => (
                                         <div key={msg.id} className={`flex flex-col ${msg.user_id === user?.id ? 'items-end' : 'items-start'}`}>
                                             <div className={`max-w-[80%] p-3 rounded-2xl ${msg.user_id === user?.id
-                                                    ? 'bg-primary text-primary-foreground rounded-tr-none'
-                                                    : 'bg-muted rounded-tl-none'
+                                                ? 'bg-primary text-primary-foreground rounded-tr-none'
+                                                : 'bg-muted rounded-tl-none'
                                                 }`}>
                                                 <p className="text-sm">{msg.content}</p>
                                             </div>

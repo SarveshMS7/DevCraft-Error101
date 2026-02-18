@@ -115,7 +115,8 @@ export function useProjectDetail(projectId: string) {
     const respondToJoinRequest = async (requestId: string, status: 'accepted' | 'rejected') => {
         const { error } = await supabase
             .from('join_requests')
-            .update({ status } as any)
+            // @ts-ignore - Supabase type inference issue with update
+            .update({ status })
             .eq('id', requestId);
 
         if (error) {

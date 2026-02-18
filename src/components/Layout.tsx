@@ -30,7 +30,7 @@ export function Layout() {
                             className={`text-sm font-medium transition-colors hover:text-primary ${location.pathname.startsWith('/projects') ? 'text-primary' : 'text-muted-foreground'
                                 }`}
                         >
-                            Exlpore Projects
+                            Explore Projects
                         </Link>
                         {user && (
                             <Link

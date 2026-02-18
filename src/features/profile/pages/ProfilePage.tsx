@@ -6,18 +6,35 @@ import { ProjectCard } from '@/features/projects/components/ProjectCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Github, Globe, Save, X, User, Plus, Clock, MapPin, RefreshCw } from 'lucide-react';
+import { Github, Globe, Save, X, User, Plus, Clock, MapPin, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { githubService } from '@/services/github/api';
 import { useToast } from '@/components/ui/use-toast';
+
+const TIMEZONE_OPTIONS = [
+    'UTC-12:00', 'UTC-11:00', 'UTC-10:00', 'UTC-09:00', 'UTC-08:00', 'UTC-07:00',
+    'UTC-06:00', 'UTC-05:00', 'UTC-04:00', 'UTC-03:00', 'UTC-02:00', 'UTC-01:00',
+    'UTC+00:00', 'UTC+01:00', 'UTC+02:00', 'UTC+03:00', 'UTC+04:00', 'UTC+05:00',
+    'UTC+05:30', 'UTC+06:00', 'UTC+07:00', 'UTC+08:00', 'UTC+09:00', 'UTC+10:00',
+    'UTC+11:00', 'UTC+12:00',
+];
+
+const AVAILABILITY_OPTIONS = [
+    { value: 'full-time', label: 'Full-time', description: '40+ hrs/week' },
+    { value: 'part-time', label: 'Part-time', description: '10-20 hrs/week' },
+    { value: 'weekends', label: 'Weekends', description: 'Weekends only' },
+    { value: 'evenings', label: 'Evenings', description: 'After work hours' },
+];
 
 export function ProfilePage() {
     const { user } = useAuth();
     const navigate = useNavigate();
     const { profile, loading: profileLoading, updateProfile } = useProfile();
     const { userProjects, loading: projectsLoading } = useProjects(user?.id);
+    const { toast } = useToast();
 
     const [isEditing, setIsEditing] = useState(false);
+    const [importingGithub, setImportingGithub] = useState(false);
     const [formData, setFormData] = useState({
         full_name: '',
         username: '',
@@ -26,10 +43,8 @@ export function ProfilePage() {
         github_username: '',
         skills: [] as string[],
         availability: '',
-        timezone: ''
+        timezone: '',
     });
-    const { toast } = useToast();
-    const [isSyncing, setIsSyncing] = useState(false);
     const [skillInput, setSkillInput] = useState('');
 
     useEffect(() => {
@@ -42,7 +57,7 @@ export function ProfilePage() {
                 github_username: profile.github_username || '',
                 skills: profile.skills || [],
                 availability: profile.availability || '',
-                timezone: profile.timezone || ''
+                timezone: profile.timezone || '',
             });
         }
     }, [profile]);
@@ -56,38 +71,37 @@ export function ProfilePage() {
         }
     };
 
-    const syncGithubSkills = async () => {
-        if (!formData.github_username) {
+    const handleImportGithubSkills = async () => {
+        const username = formData.github_username || profile?.github_username;
+        if (!username) {
             toast({
-                title: "GitHub username required",
-                description: "Please enter your GitHub username before syncing.",
+                title: "No GitHub username",
+                description: "Please enter your GitHub username first.",
                 variant: "destructive"
             });
             return;
         }
 
-        setIsSyncing(true);
         try {
-            const skillProfile = await githubService.processSkills(formData.github_username);
+            setImportingGithub(true);
+            const skillProfile = await githubService.processSkills(username);
+
             const newSkills = skillProfile.skills.map(s => s.name);
-
-            // Merge skills avoiding duplicates
-            const mergedSkills = Array.from(new Set([...formData.skills, ...newSkills]));
-
-            setFormData(prev => ({ ...prev, skills: mergedSkills }));
+            const merged = Array.from(new Set([...formData.skills, ...newSkills]));
+            setFormData(prev => ({ ...prev, skills: merged }));
 
             toast({
-                title: "Skills synced!",
-                description: `Imported ${newSkills.length} potential skills from GitHub.`,
+                title: "Skills imported!",
+                description: `Found ${newSkills.length} skills from ${skillProfile.topLanguages.length} top languages on GitHub.`,
             });
         } catch (error) {
             toast({
-                title: "Sync failed",
-                description: "Could not fetch data from GitHub. Please check the username.",
+                title: "Import failed",
+                description: "Could not fetch GitHub data. Check your username.",
                 variant: "destructive"
             });
         } finally {
-            setIsSyncing(false);
+            setImportingGithub(false);
         }
     };
 
@@ -154,14 +168,14 @@ export function ProfilePage() {
                                         </a>
                                     )}
                                     {profile?.availability && (
-                                        <div className="flex items-center text-muted-foreground">
+                                        <span className="flex items-center text-muted-foreground">
                                             <Clock className="w-4 h-4 mr-1.5" /> {profile.availability}
-                                        </div>
+                                        </span>
                                     )}
                                     {profile?.timezone && (
-                                        <div className="flex items-center text-muted-foreground">
+                                        <span className="flex items-center text-muted-foreground">
                                             <MapPin className="w-4 h-4 mr-1.5" /> {profile.timezone}
-                                        </div>
+                                        </span>
                                     )}
                                 </div>
                             </>
@@ -207,42 +221,48 @@ export function ProfilePage() {
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="github">GitHub Username</Label>
-                                        <div className="flex gap-2">
-                                            <Input
-                                                id="github"
-                                                value={formData.github_username}
-                                                onChange={e => setFormData({ ...formData, github_username: e.target.value })}
-                                                placeholder="ghuser"
-                                            />
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                size="icon"
-                                                onClick={syncGithubSkills}
-                                                disabled={isSyncing}
-                                                title="Sync skills from GitHub"
-                                            >
-                                                <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
-                                            </Button>
-                                        </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="availability">Availability</Label>
                                         <Input
+                                            id="github"
+                                            value={formData.github_username}
+                                            onChange={e => setFormData({ ...formData, github_username: e.target.value })}
+                                            placeholder="ghuser"
+                                        />
+                                    </div>
+
+                                    {/* Availability */}
+                                    <div className="space-y-2">
+                                        <Label htmlFor="availability" className="flex items-center gap-1.5">
+                                            <Clock className="w-3.5 h-3.5" /> Availability
+                                        </Label>
+                                        <select
                                             id="availability"
+                                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                                             value={formData.availability}
                                             onChange={e => setFormData({ ...formData, availability: e.target.value })}
-                                            placeholder="e.g. 10h/week, Weekends"
-                                        />
+                                        >
+                                            <option value="">Select availability...</option>
+                                            {AVAILABILITY_OPTIONS.map(opt => (
+                                                <option key={opt.value} value={opt.value}>{opt.label} ({opt.description})</option>
+                                            ))}
+                                        </select>
                                     </div>
+
+                                    {/* Timezone */}
                                     <div className="space-y-2">
-                                        <Label htmlFor="timezone">Timezone</Label>
-                                        <Input
+                                        <Label htmlFor="timezone" className="flex items-center gap-1.5">
+                                            <MapPin className="w-3.5 h-3.5" /> Timezone
+                                        </Label>
+                                        <select
                                             id="timezone"
+                                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                                             value={formData.timezone}
                                             onChange={e => setFormData({ ...formData, timezone: e.target.value })}
-                                            placeholder="e.g. UTC+5:30, EST"
-                                        />
+                                        >
+                                            <option value="">Select timezone...</option>
+                                            {TIMEZONE_OPTIONS.map(tz => (
+                                                <option key={tz} value={tz}>{tz}</option>
+                                            ))}
+                                        </select>
                                     </div>
                                 </div>
                                 <div className="flex justify-end gap-3">
@@ -265,6 +285,22 @@ export function ProfilePage() {
                     <div className="bg-card rounded-2xl p-6 border shadow-sm space-y-4">
                         <div className="flex items-center justify-between">
                             <h2 className="text-xl font-semibold">Skills</h2>
+                            {(isEditing || profile?.github_username) && (
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={handleImportGithubSkills}
+                                    disabled={importingGithub}
+                                    title="Import skills from GitHub"
+                                >
+                                    {importingGithub ? (
+                                        <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                                    ) : (
+                                        <Github className="w-3.5 h-3.5 mr-1.5" />
+                                    )}
+                                    Import
+                                </Button>
+                            )}
                         </div>
 
                         {isEditing && (
@@ -297,7 +333,43 @@ export function ProfilePage() {
                                 <p className="text-sm text-muted-foreground italic">No skills added yet.</p>
                             )}
                         </div>
+
+                        {!isEditing && profile?.github_username && (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="w-full"
+                                onClick={handleImportGithubSkills}
+                                disabled={importingGithub}
+                            >
+                                {importingGithub ? (
+                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                ) : (
+                                    <Github className="w-4 h-4 mr-2" />
+                                )}
+                                Sync from GitHub
+                            </Button>
+                        )}
                     </div>
+
+                    {/* Availability Card */}
+                    {(profile?.availability || profile?.timezone) && !isEditing && (
+                        <div className="bg-card rounded-2xl p-6 border shadow-sm space-y-3">
+                            <h2 className="text-xl font-semibold">Availability</h2>
+                            {profile.availability && (
+                                <div className="flex items-center gap-2 text-sm">
+                                    <Clock className="w-4 h-4 text-muted-foreground" />
+                                    <span className="capitalize">{profile.availability}</span>
+                                </div>
+                            )}
+                            {profile.timezone && (
+                                <div className="flex items-center gap-2 text-sm">
+                                    <MapPin className="w-4 h-4 text-muted-foreground" />
+                                    <span>{profile.timezone}</span>
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
 
                 {/* Projects Column */}
@@ -313,7 +385,7 @@ export function ProfilePage() {
                         {userProjects.length > 0 ? (
                             <div className="grid grid-cols-1 gap-4">
                                 {userProjects.map(project => (
-                                    <ProjectCard key={project.id} project={project} />
+                                    <ProjectCard key={project.id} project={project as any} />
                                 ))}
                             </div>
                         ) : (

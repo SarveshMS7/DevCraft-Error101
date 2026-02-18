@@ -6,7 +6,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
-import { Rocket, ArrowLeft, X } from 'lucide-react';
+import { Rocket, ArrowLeft, X, Zap, Users } from 'lucide-react';
+
+const URGENCY_OPTIONS = [
+    { value: 'low', label: 'Low', description: 'No rush, flexible timeline', color: 'border-green-300 text-green-700 bg-green-50' },
+    { value: 'medium', label: 'Medium', description: 'Standard pace, some deadline', color: 'border-yellow-300 text-yellow-700 bg-yellow-50' },
+    { value: 'high', label: 'High', description: 'Urgent, tight deadline', color: 'border-red-300 text-red-700 bg-red-50' },
+] as const;
 
 export function CreateProjectPage() {
     const { user } = useAuth();
@@ -19,10 +25,10 @@ export function CreateProjectPage() {
         title: '',
         description: '',
         required_skills: [] as string[],
+        urgency: 'medium' as 'low' | 'medium' | 'high',
+        team_size: 3,
         github_url: '',
         image_url: '',
-        urgency: 'medium' as 'low' | 'medium' | 'high',
-        team_size: 2,
     });
     const [skillInput, setSkillInput] = useState('');
 
@@ -45,16 +51,14 @@ export function CreateProjectPage() {
                 title: formData.title,
                 description: formData.description,
                 required_skills: formData.required_skills,
-                github_url: formData.github_url || null,
-                image_url: formData.image_url || null,
                 urgency: formData.urgency,
                 team_size: formData.team_size,
                 owner_id: user.id,
                 status: 'open'
-            });
+            } as any);
             navigate('/projects');
         } catch (error) {
-            // Error handheld by hook
+            // Error handled by hook
         } finally {
             setLoading(false);
         }
@@ -100,6 +104,7 @@ export function CreateProjectPage() {
 
             <form onSubmit={handleSubmit} className="space-y-6 bg-card p-8 rounded-2xl border shadow-lg">
                 <div className="space-y-4">
+                    {/* Title */}
                     <div className="space-y-2">
                         <Label htmlFor="title">Project Title</Label>
                         <Input
@@ -112,6 +117,7 @@ export function CreateProjectPage() {
                         />
                     </div>
 
+                    {/* Description */}
                     <div className="space-y-2">
                         <Label htmlFor="description">Detailed Description</Label>
                         <textarea
@@ -124,52 +130,52 @@ export function CreateProjectPage() {
                         />
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="github_url">GitHub Repository (Optional)</Label>
-                            <Input
-                                id="github_url"
-                                placeholder="https://github.com/user/repo"
-                                value={formData.github_url}
-                                onChange={e => setFormData({ ...formData, github_url: e.target.value })}
-                            />
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="image_url">Screenshot URL (Optional)</Label>
-                            <Input
-                                id="image_url"
-                                placeholder="https://example.com/image.png"
-                                value={formData.image_url}
-                                onChange={e => setFormData({ ...formData, image_url: e.target.value })}
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="urgency">Urgency</Label>
-                            <select
-                                id="urgency"
-                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                                value={formData.urgency}
-                                onChange={e => setFormData({ ...formData, urgency: e.target.value as any })}
-                            >
-                                <option value="low">Low</option>
-                                <option value="medium">Medium</option>
-                                <option value="high">High</option>
-                            </select>
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="team_size">Desired Team Size</Label>
-                            <Input
-                                id="team_size"
-                                type="number"
-                                min="1"
-                                max="50"
-                                value={formData.team_size}
-                                onChange={e => setFormData({ ...formData, team_size: parseInt(e.target.value) || 2 })}
-                            />
+                    {/* Urgency */}
+                    <div className="space-y-3">
+                        <Label className="flex items-center gap-2">
+                            <Zap className="w-4 h-4" /> Project Urgency
+                        </Label>
+                        <div className="grid grid-cols-3 gap-3">
+                            {URGENCY_OPTIONS.map(opt => (
+                                <button
+                                    key={opt.value}
+                                    type="button"
+                                    onClick={() => setFormData({ ...formData, urgency: opt.value })}
+                                    className={`p-3 rounded-xl border-2 text-left transition-all ${formData.urgency === opt.value
+                                        ? opt.color + ' border-current shadow-sm'
+                                        : 'border-border bg-background hover:bg-muted/50'
+                                        }`}
+                                >
+                                    <div className="font-semibold text-sm">{opt.label}</div>
+                                    <div className="text-xs opacity-70 mt-0.5">{opt.description}</div>
+                                </button>
+                            ))}
                         </div>
                     </div>
 
+                    {/* Team Size */}
+                    <div className="space-y-2">
+                        <Label htmlFor="team_size" className="flex items-center gap-2">
+                            <Users className="w-4 h-4" /> Team Size
+                        </Label>
+                        <div className="flex items-center gap-4">
+                            <input
+                                id="team_size"
+                                type="range"
+                                min={2}
+                                max={10}
+                                value={formData.team_size}
+                                onChange={e => setFormData({ ...formData, team_size: parseInt(e.target.value) })}
+                                className="flex-1 accent-primary"
+                            />
+                            <span className="w-16 text-center font-bold text-lg bg-secondary rounded-lg py-1">
+                                {formData.team_size}
+                            </span>
+                        </div>
+                        <p className="text-xs text-muted-foreground">Looking for {formData.team_size} team members total</p>
+                    </div>
+
+                    {/* Required Skills */}
                     <div className="space-y-3">
                         <Label>Required Skills / Roles</Label>
                         <div className="flex flex-wrap gap-2 mb-2">
@@ -189,6 +195,29 @@ export function CreateProjectPage() {
                                 onChange={e => setSkillInput(e.target.value)}
                                 onKeyDown={addSkill}
                                 className="flex-1"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Optional Fields */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="github_url">GitHub Repository (Optional)</Label>
+                            <Input
+                                id="github_url"
+                                placeholder="https://github.com/user/repo"
+                                value={formData.github_url}
+                                onChange={e => setFormData({ ...formData, github_url: e.target.value })}
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="image_url">Screenshot URL (Optional)</Label>
+                            <Input
+                                id="image_url"
+                                placeholder="https://example.com/image.png"
+                                value={formData.image_url}
+                                onChange={e => setFormData({ ...formData, image_url: e.target.value })}
                             />
                         </div>
                     </div>
