@@ -137,6 +137,84 @@ export interface Database {
                     content?: string
                 }
             }
+            project_invites: {
+                Row: {
+                    id: string
+                    project_id: string
+                    sender_id: string
+                    receiver_id: string
+                    message: string | null
+                    status: 'pending' | 'accepted' | 'rejected'
+                    created_at: string
+                }
+                Insert: {
+                    id?: string
+                    project_id: string
+                    sender_id: string
+                    receiver_id: string
+                    message?: string | null
+                    status?: 'pending' | 'accepted' | 'rejected'
+                    created_at?: string
+                }
+                Update: {
+                    id?: string
+                    project_id?: string
+                    sender_id?: string
+                    receiver_id?: string
+                    message?: string | null
+                    status?: 'pending' | 'accepted' | 'rejected'
+                    created_at?: string
+                }
+            }
+            project_members: {
+                Row: {
+                    id: string
+                    project_id: string
+                    user_id: string
+                    role: 'leader' | 'member'
+                    joined_at: string
+                }
+                Insert: {
+                    id?: string
+                    project_id: string
+                    user_id: string
+                    role?: 'leader' | 'member'
+                    joined_at?: string
+                }
+                Update: {
+                    id?: string
+                    project_id?: string
+                    user_id?: string
+                    role?: 'leader' | 'member'
+                    joined_at?: string
+                }
+            }
+            github_profiles: {
+                Row: {
+                    user_id: string
+                    username: string
+                    languages: Record<string, number>
+                    topics: string[]
+                    repo_names: string[]
+                    last_fetched: string
+                }
+                Insert: {
+                    user_id: string
+                    username: string
+                    languages?: Record<string, number>
+                    topics?: string[]
+                    repo_names?: string[]
+                    last_fetched?: string
+                }
+                Update: {
+                    user_id?: string
+                    username?: string
+                    languages?: Record<string, number>
+                    topics?: string[]
+                    repo_names?: string[]
+                    last_fetched?: string
+                }
+            }
         }
     }
 }

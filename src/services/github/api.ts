@@ -1,6 +1,14 @@
-import { GithubRawRepo, ProcessedSkill, UserSkillProfile } from './types';
+import { supabase } from '@/lib/supabase';
+import { GithubRawRepo, ProcessedSkill, UserSkillProfile, GithubProfileCache, GitHubSkillVector } from './types';
 
+const CACHE_TTL_HOURS = 24;
+
+/**
+ * GitHub Analysis Service
+ * Fetches repos, extracts skills, and caches results in Supabase.
+ */
 export class GithubService {
+  // ─── Repo Fetching ──────────────────────────────────────────
   async getUserRepos(username: string): Promise<GithubRawRepo[]> {
     try {
       const url = `https://api.github.com/users/${username}/repos?sort=updated&per_page=30`;
@@ -26,6 +34,7 @@ export class GithubService {
     }
   }
 
+  // ─── Skill Processing ──────────────────────────────────────
   async processSkills(username: string): Promise<UserSkillProfile> {
     const repos = await this.getUserRepos(username);
 
@@ -69,6 +78,125 @@ export class GithubService {
       skills: Array.from(skillMap.values()),
       topLanguages: topLanguages.slice(0, 5)
     };
+  }
+
+  // ─── GitHub Skill Vector (for matching engine) ─────────────
+  async getSkillVector(username: string): Promise<GitHubSkillVector> {
+    const repos = await this.getUserRepos(username);
+
+    const languages: Record<string, number> = {};
+    const topicsSet = new Set<string>();
+    const repoNames: string[] = [];
+
+    repos.forEach(repo => {
+      if (repo.language) {
+        languages[repo.language] = (languages[repo.language] || 0) + 1;
+      }
+      repo.topics?.forEach(topic => topicsSet.add(topic.toLowerCase()));
+      repoNames.push(repo.name.toLowerCase());
+    });
+
+    const topics = Array.from(topicsSet);
+    const allSkills = [
+      ...Object.keys(languages).map(l => l.toLowerCase()),
+      ...topics,
+    ];
+
+    return {
+      languages,
+      topics,
+      repoNames,
+      allSkills: [...new Set(allSkills)],
+    };
+  }
+
+  // ─── Caching Layer ─────────────────────────────────────────
+  /**
+   * Get cached GitHub profile. Returns null if not cached or expired.
+   */
+  async getCachedProfile(userId: string): Promise<GithubProfileCache | null> {
+    const { data, error } = await supabase
+      .from('github_profiles')
+      .select('*')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (error || !data) return null;
+
+    const row = data as any;
+
+    // Check TTL
+    const lastFetched = new Date(row.last_fetched);
+    const now = new Date();
+    const hoursSinceFetch = (now.getTime() - lastFetched.getTime()) / (1000 * 60 * 60);
+
+    if (hoursSinceFetch > CACHE_TTL_HOURS) {
+      return null; // Cache expired
+    }
+
+    return row as GithubProfileCache;
+  }
+
+  /**
+   * Save or update GitHub profile cache.
+   */
+  async setCachedProfile(profile: GithubProfileCache): Promise<void> {
+    const { error } = await supabase
+      .from('github_profiles')
+      // @ts-ignore - upsert typing
+      .upsert({
+        user_id: profile.user_id,
+        username: profile.username,
+        languages: profile.languages,
+        topics: profile.topics,
+        repo_names: profile.repo_names,
+        last_fetched: new Date().toISOString(),
+      }, { onConflict: 'user_id' });
+
+    if (error) {
+      console.error('Error caching GitHub profile:', error);
+    }
+  }
+
+  /**
+   * Get GitHub skill vector with caching.
+   * Fetches from cache if within TTL, otherwise fetches from GitHub API.
+   */
+  async getCachedSkillVector(userId: string, githubUsername: string): Promise<GitHubSkillVector> {
+    // Try cache first
+    const cached = await this.getCachedProfile(userId);
+    if (cached) {
+      const languages = (typeof cached.languages === 'object' && cached.languages !== null)
+        ? cached.languages as Record<string, number>
+        : {};
+      const topics = Array.isArray(cached.topics) ? cached.topics : [];
+      const repoNames = Array.isArray(cached.repo_names) ? cached.repo_names : [];
+
+      return {
+        languages,
+        topics,
+        repoNames,
+        allSkills: [
+          ...Object.keys(languages).map(l => l.toLowerCase()),
+          ...topics.map(t => t.toLowerCase()),
+        ],
+      };
+    }
+
+    // Fetch fresh data
+    const vector = await this.getSkillVector(githubUsername);
+
+    // Cache it
+    await this.setCachedProfile({
+      user_id: userId,
+      username: githubUsername,
+      languages: vector.languages,
+      topics: vector.topics,
+      repo_names: vector.repoNames,
+      last_fetched: new Date().toISOString(),
+    });
+
+    return vector;
   }
 }
 

@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { calculateCompatibility } from '@/services/matching/compatibility';
+import { TeammateSuggestions } from '../components/TeammateSuggestions';
 
 export function ProjectDetailPage() {
     const { id } = useParams<{ id: string }>();
@@ -256,6 +257,15 @@ export function ProjectDetailPage() {
                             * Placeholder: AI-driven gap analysis coming soon.
                         </p>
                     </div>
+
+                    {/* Teammate Suggestions (Owner only) */}
+                    {isOwner && (
+                        <TeammateSuggestions
+                            projectId={project.id}
+                            ownerId={project.owner_id}
+                            currentUserId={user?.id}
+                        />
+                    )}
                 </div>
             </div>
 
