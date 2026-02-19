@@ -23,45 +23,58 @@ export function Layout() {
           {/* Logo */}
           <Link
             to="/"
-            className="flex items-center gap-2 font-bold text-xl text-primary"
+            className="flex items-center gap-3 font-extrabold text-2xl text-primary tracking-wide"
           >
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-primary-foreground">
+            <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center text-primary-foreground text-lg">
               C
             </div>
-            CollabSphere
+            <span className="text-3xl">CollabSphere</span>
           </Link>
 
           {/* Navigation */}
-          <nav className="hidden md:flex items-center gap-6">
+          <nav className="hidden md:flex items-center gap-8">
+            
+            {/* Home */}
+            <Link
+              to="/"
+              className={`text-base font-semibold transition-colors hover:text-primary ${
+                location.pathname === "/"
+                  ? "text-primary"
+                  : "text-muted-foreground"
+              }`}
+            >
+              Home
+            </Link>
+
+            {/* Explore Projects */}
             <Link
               to="/projects"
-              className={`text-sm font-medium transition-colors hover:text-primary ${location.pathname.startsWith("/projects") ||
-                location.pathname === "/"
-                ? "text-primary"
-                : "text-muted-foreground"
-                }`}
+              className={`text-base font-semibold transition-colors hover:text-primary ${
+                location.pathname.startsWith("/projects")
+                  ? "text-primary"
+                  : "text-muted-foreground"
+              }`}
             >
               Explore Projects
             </Link>
 
+            {/* Explore Teams */}
             <Link
               to="/explore-teams"
-              className={`text-sm font-medium transition-colors hover:text-primary ${location.pathname.startsWith("/explore-teams")
-                ? "text-primary"
-                : "text-muted-foreground"
-                }`}
+              className={`text-base font-semibold transition-colors hover:text-primary ${
+                location.pathname.startsWith("/explore-teams")
+                  ? "text-primary"
+                  : "text-muted-foreground"
+              }`}
             >
               Explore Teams
             </Link>
-
-
           </nav>
 
           {/* Right Section */}
           <div className="flex items-center gap-4">
             {user ? (
               <>
-
                 {/* New Project */}
                 <Button
                   size="sm"
