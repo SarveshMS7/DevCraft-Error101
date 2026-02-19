@@ -1,3 +1,5 @@
+import { MatchLabel, getMatchLabel } from './shared-types';
+
 export interface MatchUser {
     id: string;
     skills: string[];
@@ -24,7 +26,7 @@ export interface MatchScore {
     projectId: string;
     score: number;               // 0-100 final weighted score
     details: MatchScoreDetails;
-    label: 'Excellent' | 'Good' | 'Fair' | 'Low';
+    label: MatchLabel;
 }
 
 /**
@@ -41,9 +43,5 @@ export const SCORE_WEIGHTS = {
 /**
  * Score label thresholds
  */
-export const getScoreLabel = (score: number): MatchScore['label'] => {
-    if (score >= 75) return 'Excellent';
-    if (score >= 50) return 'Good';
-    if (score >= 25) return 'Fair';
-    return 'Low';
-};
+export const getScoreLabel = getMatchLabel;
+

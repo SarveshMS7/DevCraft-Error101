@@ -1,8 +1,9 @@
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { Button } from "@/components/ui/button";
-import { Plus, User, LogOut, Users } from "lucide-react";
+import { Plus, User, LogOut } from "lucide-react";
 import { NotificationBell } from "@/features/notifications/components/NotificationBell";
+import { ErrorBoundary } from "@/components/shared/ErrorBoundary";
 
 export function Layout() {
   const { user, signOut } = useAuth();
@@ -53,33 +54,13 @@ export function Layout() {
               Explore Teams
             </Link>
 
-            {user && (
-              <Link
-                to="/profile"
-                className={`text-sm font-medium transition-colors hover:text-primary ${location.pathname === "/profile"
-                  ? "text-primary"
-                  : "text-muted-foreground"
-                  }`}
-              >
-                My Profile
-              </Link>
-            )}
+
           </nav>
 
           {/* Right Section */}
           <div className="flex items-center gap-4">
             {user ? (
               <>
-                {/* Create Team */}
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  className="hidden sm:flex"
-                  onClick={() => navigate("/create-team")}
-                >
-                  <Users className="w-4 h-4 mr-2" />
-                  Create Team
-                </Button>
 
                 {/* New Project */}
                 <Button
@@ -129,7 +110,9 @@ export function Layout() {
       </header>
 
       <main className="flex-1 container mx-auto px-4 py-8">
-        <Outlet />
+        <ErrorBoundary>
+          <Outlet />
+        </ErrorBoundary>
       </main>
 
       <footer className="border-t py-6 bg-card">

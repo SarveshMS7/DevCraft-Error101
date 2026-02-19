@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { useProjectDetail } from '../hooks/useProjectDetail';
@@ -21,6 +21,8 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { calculateCompatibility } from '@/services/matching/compatibility';
+import { SkillBadge } from '@/components/shared/SkillBadge';
+import { EmptyState } from '@/components/shared/EmptyState';
 import { TeammateSuggestions } from '../components/TeammateSuggestions';
 
 export function ProjectDetailPage() {
@@ -33,14 +35,53 @@ export function ProjectDetailPage() {
     const [chatMessage, setChatMessage] = useState('');
     const [joinMessage, setJoinMessage] = useState('');
     const [showJoinModal, setShowJoinModal] = useState(false);
+    const messagesEndRef = useRef<HTMLDivElement>(null);
+
+    // Auto-scroll to bottom when new messages arrive
+    useEffect(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, [messages]);
 
     if (loading) return (
-        <div className="flex items-center justify-center min-h-[400px]">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="max-w-6xl mx-auto space-y-8 pb-12">
+            <div className="h-9 bg-muted rounded w-32 animate-pulse" />
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="lg:col-span-2 space-y-8">
+                    <div className="bg-card rounded-2xl p-8 border shadow-sm space-y-6">
+                        <div className="h-10 bg-muted rounded w-3/4 animate-pulse" />
+                        <div className="flex gap-4">
+                            <div className="h-4 bg-muted rounded w-24 animate-pulse" />
+                            <div className="h-4 bg-muted rounded w-32 animate-pulse" />
+                        </div>
+                        <div className="space-y-2">
+                            <div className="h-4 bg-muted rounded w-full animate-pulse" />
+                            <div className="h-4 bg-muted rounded w-5/6 animate-pulse" />
+                            <div className="h-4 bg-muted rounded w-2/3 animate-pulse" />
+                        </div>
+                        <div className="flex gap-2">
+                            <div className="h-7 bg-muted rounded-full w-16 animate-pulse" />
+                            <div className="h-7 bg-muted rounded-full w-20 animate-pulse" />
+                            <div className="h-7 bg-muted rounded-full w-14 animate-pulse" />
+                        </div>
+                    </div>
+                </div>
+                <div className="space-y-6">
+                    <div className="bg-card rounded-2xl p-6 border shadow-sm h-[200px] animate-pulse" />
+                    <div className="bg-card rounded-2xl p-6 border shadow-sm h-[300px] animate-pulse" />
+                </div>
+            </div>
         </div>
     );
 
-    if (!project) return <div className="p-8 text-center">Project not found</div>;
+    if (!project) return (
+        <EmptyState
+            icon={AlertCircle}
+            title="Project not found"
+            description="This project may have been removed or you may not have access."
+            actionLabel="Browse Projects"
+            onAction={() => navigate('/projects')}
+        />
+    );
 
     const isOwner = user?.id === project.owner_id;
     const isMember = isOwner || joinRequests.some(r => r.user_id === user?.id && r.status === 'accepted');
@@ -113,9 +154,7 @@ export function ProjectDetailPage() {
                             <h3 className="font-semibold text-lg">Required Skills</h3>
                             <div className="flex flex-wrap gap-2">
                                 {project.required_skills?.map(skill => (
-                                    <span key={skill} className="px-3 py-1 bg-secondary text-secondary-foreground rounded-full text-sm font-medium border">
-                                        {skill}
-                                    </span>
+                                    <SkillBadge key={skill} skill={skill} variant="outline" size="md" />
                                 ))}
                             </div>
                         </div>
@@ -133,7 +172,7 @@ export function ProjectDetailPage() {
                         )}
 
                         {isMember && !isOwner && (
-                            <div className="p-4 bg-green-50 text-green-700 rounded-xl border border-green-100 flex items-center">
+                            <div className="p-4 bg-emerald-500/10 text-emerald-600 rounded-xl border border-emerald-500/20 flex items-center">
                                 <CheckCircle2 className="w-5 h-5 mr-3" />
                                 You are a member of this project!
                             </div>
@@ -156,20 +195,41 @@ export function ProjectDetailPage() {
                                         <p>No messages yet. Start the conversation!</p>
                                     </div>
                                 ) : (
-                                    messages.map((msg) => (
-                                        <div key={msg.id} className={`flex flex-col ${msg.user_id === user?.id ? 'items-end' : 'items-start'}`}>
-                                            <div className={`max-w-[80%] p-3 rounded-2xl ${msg.user_id === user?.id
-                                                ? 'bg-primary text-primary-foreground rounded-tr-none'
-                                                : 'bg-muted rounded-tl-none'
-                                                }`}>
-                                                <p className="text-sm">{msg.content}</p>
+                                    messages.map((msg, idx) => {
+                                        const isOwn = msg.user_id === user?.id;
+                                        const senderName = (msg as any).profiles?.full_name || 'Unknown';
+                                        // Show sender label if it's not own message and different from prev
+                                        const showSender = !isOwn && (
+                                            idx === 0 || messages[idx - 1].user_id !== msg.user_id
+                                        );
+                                        return (
+                                            <div key={msg.id} className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}>
+                                                {!isOwn && (
+                                                    <div className="w-7 h-7 rounded-full bg-secondary flex items-center justify-center text-xs font-bold mr-2 flex-shrink-0 mt-1">
+                                                        {senderName.charAt(0).toUpperCase()}
+                                                    </div>
+                                                )}
+                                                <div className="flex flex-col max-w-[75%]">
+                                                    {showSender && (
+                                                        <span className="text-[10px] text-muted-foreground mb-0.5 px-1 font-medium">
+                                                            {senderName}
+                                                        </span>
+                                                    )}
+                                                    <div className={`p-3 rounded-2xl ${isOwn
+                                                        ? 'bg-primary text-primary-foreground rounded-tr-sm'
+                                                        : 'bg-muted rounded-tl-sm'
+                                                        }`}>
+                                                        <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                                                    </div>
+                                                    <span className={`text-[10px] text-muted-foreground mt-0.5 px-1 ${isOwn ? 'text-right' : ''}`}>
+                                                        {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                    </span>
+                                                </div>
                                             </div>
-                                            <span className="text-[10px] text-muted-foreground mt-1">
-                                                {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                            </span>
-                                        </div>
-                                    ))
+                                        );
+                                    })
                                 )}
+                                <div ref={messagesEndRef} />
                             </div>
 
                             <form onSubmit={handleSendMessage} className="p-4 border-t bg-muted/10">
@@ -241,7 +301,7 @@ export function ProjectDetailPage() {
                                     <div key={skill} className="space-y-1">
                                         <div className="flex justify-between text-xs font-medium">
                                             <span>{skill}</span>
-                                            <span className={filled || (isUserSkill && isMember) ? 'text-green-600' : 'text-orange-600'}>
+                                            <span className={filled || (isUserSkill && isMember) ? 'text-emerald-600 dark:text-emerald-400' : 'text-orange-600 dark:text-orange-400'}>
                                                 {filled || (isUserSkill && isMember) ? 'FILLED' : 'NEEDED'}
                                             </span>
                                         </div>

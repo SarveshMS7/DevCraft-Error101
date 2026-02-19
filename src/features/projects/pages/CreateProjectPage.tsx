@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
+import { SkillBadge } from '@/components/shared/SkillBadge';
 import { Rocket, ArrowLeft, X, Zap, Users } from 'lucide-react';
 
 const URGENCY_OPTIONS = [
@@ -180,9 +181,9 @@ export function CreateProjectPage() {
                         <Label>Required Skills / Roles</Label>
                         <div className="flex flex-wrap gap-2 mb-2">
                             {formData.required_skills.map(skill => (
-                                <span key={skill} className="inline-flex items-center px-3 py-1 bg-primary/10 text-primary rounded-full text-sm font-medium border border-primary/20">
-                                    {skill}
-                                    <button type="button" onClick={() => removeSkill(skill)} className="ml-2 hover:text-destructive">
+                                <span key={skill} className="inline-flex items-center">
+                                    <SkillBadge skill={skill} size="md" />
+                                    <button type="button" onClick={() => removeSkill(skill)} className="ml-1 hover:text-destructive text-muted-foreground">
                                         <X className="w-3 h-3" />
                                     </button>
                                 </span>

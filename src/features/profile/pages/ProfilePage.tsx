@@ -6,6 +6,7 @@ import { ProjectCard } from '@/features/projects/components/ProjectCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { SkillBadge } from '@/components/shared/SkillBadge';
 import { Github, Globe, Save, X, User, Plus, Clock, MapPin, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { githubService } from '@/services/github/api';
@@ -125,8 +126,32 @@ export function ProfilePage() {
     const loading = profileLoading || projectsLoading;
 
     if (loading) return (
-        <div className="flex items-center justify-center min-h-[400px]">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="max-w-4xl mx-auto space-y-8">
+            {/* Header skeleton */}
+            <div className="bg-card rounded-2xl p-8 border shadow-sm">
+                <div className="flex flex-col md:flex-row items-center md:items-start gap-8">
+                    <div className="w-32 h-32 rounded-full bg-muted animate-pulse" />
+                    <div className="flex-1 space-y-4 w-full">
+                        <div className="h-7 bg-muted rounded-md w-48 animate-pulse" />
+                        <div className="h-4 bg-muted rounded w-32 animate-pulse" />
+                        <div className="h-4 bg-muted rounded w-64 animate-pulse" />
+                        <div className="flex gap-2">
+                            <div className="h-6 bg-muted rounded-full w-16 animate-pulse" />
+                            <div className="h-6 bg-muted rounded-full w-20 animate-pulse" />
+                            <div className="h-6 bg-muted rounded-full w-14 animate-pulse" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {/* Projects skeleton */}
+            <div className="bg-card rounded-2xl p-8 border shadow-sm space-y-4">
+                <div className="h-6 bg-muted rounded w-32 animate-pulse" />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {[1, 2].map(i => (
+                        <div key={i} className="h-[200px] rounded-xl border bg-muted/20 animate-pulse" />
+                    ))}
+                </div>
+            </div>
         </div>
     );
 
@@ -317,13 +342,10 @@ export function ProfilePage() {
                         <div className="flex flex-wrap gap-2">
                             {(isEditing ? formData.skills : (profile?.skills || [])).length > 0 ? (
                                 (isEditing ? formData.skills : (profile?.skills || [])).map((skill: string) => (
-                                    <span
-                                        key={skill}
-                                        className="inline-flex items-center px-3 py-1 bg-primary/10 text-primary rounded-full text-sm font-medium border border-primary/20"
-                                    >
-                                        {skill}
+                                    <span key={skill} className="inline-flex items-center">
+                                        <SkillBadge skill={skill} size="md" />
                                         {isEditing && (
-                                            <button onClick={() => removeSkill(skill)} className="ml-2 hover:text-destructive">
+                                            <button onClick={() => removeSkill(skill)} className="ml-1 hover:text-destructive text-muted-foreground">
                                                 <X className="w-3 h-3" />
                                             </button>
                                         )}

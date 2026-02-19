@@ -1,140 +1,169 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
-import { Project, JoinRequest, Message } from '../types';
+/**
+ * ═══════════════════════════════════════════════════════════════
+ * useProjectDetail — Thin state layer over projectDetailService
+ * ═══════════════════════════════════════════════════════════════
+ *
+ * Pattern: Services throw → Hooks catch + toast → Components render.
+ * All Supabase access is delegated to projectDetailService.
+ */
+
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { Project, JoinRequest } from '../types';
 import { projectsApi } from '../api';
 import { useToast } from '@/components/ui/use-toast';
+import {
+    ChatMessage,
+    fetchMessages,
+    insertMessage,
+    subscribeToMessages,
+    fetchJoinRequests,
+    createJoinRequest,
+    updateJoinRequestStatus,
+} from '../services/projectDetailService';
+
+// Re-export so consumers don't need to import from the service
+export type { ChatMessage } from '../services/projectDetailService';
 
 export function useProjectDetail(projectId: string) {
     const [project, setProject] = useState<Project | null>(null);
     const [loading, setLoading] = useState(true);
-    const [messages, setMessages] = useState<Message[]>([]);
+    const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [joinRequests, setJoinRequests] = useState<JoinRequest[]>([]);
     const { toast } = useToast();
+    const unsubscribeRef = useRef<(() => void) | null>(null);
+
+    // ─── Data loaders ─────────────────────────────────────────
+
+    const loadProject = useCallback(async () => {
+        try {
+            const data = await projectsApi.getById(projectId);
+            setProject(data as any);
+        } catch (error: any) {
+            toast({
+                title: 'Error loading project',
+                description: error.message || 'Please try again later',
+                variant: 'destructive',
+            });
+        } finally {
+            setLoading(false);
+        }
+    }, [projectId, toast]);
+
+    const loadMessages = useCallback(async () => {
+        try {
+            const data = await fetchMessages(projectId);
+            setMessages(data);
+        } catch (error: any) {
+            console.error('Error loading messages:', error);
+        }
+    }, [projectId]);
+
+    const loadJoinRequests = useCallback(async () => {
+        try {
+            const data = await fetchJoinRequests(projectId);
+            setJoinRequests(data);
+        } catch (error: any) {
+            console.error('Error loading join requests:', error);
+        }
+    }, [projectId]);
+
+    // ─── Initial load ────────────────────────────────────────
 
     useEffect(() => {
         if (projectId) {
             loadProject();
             loadMessages();
             loadJoinRequests();
-            subscribeToMessages();
         }
-    }, [projectId]);
+    }, [projectId, loadProject, loadMessages, loadJoinRequests]);
 
-    const loadProject = async () => {
-        try {
-            const data = await projectsApi.getById(projectId);
-            setProject(data as any);
-        } catch (error) {
-            console.error('Error loading project:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
+    // ─── Realtime subscription (separate effect, proper cleanup) ──
 
-    const loadMessages = async () => {
-        try {
-            const { data, error } = await supabase
-                .from('messages')
-                .select('*')
-                .eq('project_id', projectId)
-                .order('created_at', { ascending: true });
+    useEffect(() => {
+        if (!projectId) return;
 
-            if (error) console.error('Error loading messages:', error);
-            else setMessages(data || []);
-        } catch (err) {
-            console.error('messages table may not exist yet:', err);
-        }
-    };
+        const unsubscribe = subscribeToMessages(projectId, (newMsg) => {
+            setMessages(prev => {
+                // Avoid duplicates from optimistic insert
+                const exists = prev.some(m => m.id === newMsg.id);
+                if (exists) {
+                    return prev.map(m => m.id === newMsg.id ? { ...m, ...newMsg } : m);
+                }
+                return [...prev, newMsg];
+            });
+        });
 
-    const loadJoinRequests = async () => {
-        const { data, error } = await supabase
-            .from('join_requests')
-            .select('*, profiles(full_name, avatar_url)')
-            .eq('project_id', projectId);
-
-        if (error) console.error('Error loading join requests:', error);
-        else setJoinRequests(data || []);
-    };
-
-    const subscribeToMessages = () => {
-        const channel = supabase
-            .channel(`project-chat:${projectId}`)
-            .on('postgres_changes', {
-                event: 'INSERT',
-                schema: 'public',
-                table: 'messages',
-                filter: `project_id=eq.${projectId}`
-            }, (payload) => {
-                setMessages(prev => [...prev, payload.new as Message]);
-            })
-            .subscribe();
+        unsubscribeRef.current = unsubscribe;
 
         return () => {
-            supabase.removeChannel(channel);
+            unsubscribe();
+            unsubscribeRef.current = null;
         };
-    };
+    }, [projectId]);
+
+    // ─── Actions ─────────────────────────────────────────────
 
     const sendMessage = async (userId: string, content: string) => {
-        const { error } = await supabase
-            .from('messages')
-            .insert({
-                project_id: projectId,
-                user_id: userId,
-                content
-            } as any);
+        // Optimistic insert
+        const optimisticId = crypto.randomUUID();
+        const optimisticMsg: ChatMessage = {
+            id: optimisticId,
+            created_at: new Date().toISOString(),
+            project_id: projectId,
+            user_id: userId,
+            content,
+            profiles: null,
+        };
+        setMessages(prev => [...prev, optimisticMsg]);
 
-        if (error) {
+        try {
+            const saved = await insertMessage(projectId, userId, content);
+            // Replace optimistic message with real DB data
+            setMessages(prev =>
+                prev.map(m => m.id === optimisticId ? saved : m)
+            );
+        } catch (error: any) {
+            // Remove optimistic message on failure
+            setMessages(prev => prev.filter(m => m.id !== optimisticId));
             toast({
-                title: "Failed to send message",
+                title: 'Failed to send message',
                 description: error.message,
-                variant: "destructive"
+                variant: 'destructive',
             });
         }
     };
 
     const submitJoinRequest = async (userId: string, message: string) => {
-        const { error } = await supabase
-            .from('join_requests')
-            .insert({
-                project_id: projectId,
-                user_id: userId,
-                message
-            } as any);
-
-        if (error) {
+        try {
+            await createJoinRequest(projectId, userId, message);
             toast({
-                title: "Failed to submit request",
-                description: error.message,
-                variant: "destructive"
-            });
-        } else {
-            toast({
-                title: "Request sent!",
-                description: "The project owner will review your request.",
+                title: 'Request sent!',
+                description: 'The project owner will review your request.',
             });
             loadJoinRequests();
+        } catch (error: any) {
+            toast({
+                title: 'Failed to submit request',
+                description: error.message,
+                variant: 'destructive',
+            });
         }
     };
 
     const respondToJoinRequest = async (requestId: string, status: 'accepted' | 'rejected') => {
-        const { error } = await supabase
-            .from('join_requests')
-            // @ts-ignore - Supabase type inference issue with update
-            .update({ status })
-            .eq('id', requestId);
-
-        if (error) {
-            toast({
-                title: "Failed to update request",
-                description: error.message,
-                variant: "destructive"
-            });
-        } else {
+        try {
+            await updateJoinRequestStatus(requestId, status);
             toast({
                 title: `Request ${status}`,
                 description: `Successfully ${status} the join request.`,
             });
             loadJoinRequests();
+        } catch (error: any) {
+            toast({
+                title: 'Failed to update request',
+                description: error.message,
+                variant: 'destructive',
+            });
         }
     };
 
@@ -146,6 +175,6 @@ export function useProjectDetail(projectId: string) {
         sendMessage,
         submitJoinRequest,
         respondToJoinRequest,
-        refresh: loadProject
+        refresh: loadProject,
     };
 }

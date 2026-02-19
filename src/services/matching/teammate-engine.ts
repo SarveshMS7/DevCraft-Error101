@@ -21,6 +21,7 @@ import {
 } from './teammate-types';
 
 import { calculateComplementaryScore } from './scoring';
+import { getMatchLabel } from './shared-types';
 
 // ─── Skill Overlap Score ──────────────────────────────────────
 function computeSkillOverlap(
@@ -131,10 +132,7 @@ export function extractKeywords(text: string): string[] {
 
 // ─── Score Label ──────────────────────────────────────────────
 function getTeammateScoreLabel(score: number): MatchResult['label'] {
-    if (score >= 75) return 'Excellent';
-    if (score >= 50) return 'Good';
-    if (score >= 25) return 'Fair';
-    return 'Low';
+    return getMatchLabel(score);
 }
 
 // ─── Main Matching Engine ─────────────────────────────────────

@@ -1,4 +1,5 @@
 import { CredibilitySummary } from '@/services/credibility/types';
+import { MatchLabel } from './shared-types';
 
 /** Result from the teammate matching engine */
 export interface MatchResult {
@@ -6,7 +7,7 @@ export interface MatchResult {
     score: number;            // 0-100 final weighted score
     matchedSkills: string[];  // skills that matched
     confidence: number;       // 0-1 confidence in the match
-    label: 'Excellent' | 'Good' | 'Fair' | 'Low';
+    label: MatchLabel;
     details: TeammateMatchDetails;
     /** Credibility data (populated when available) */
     credibility?: CredibilitySummary;

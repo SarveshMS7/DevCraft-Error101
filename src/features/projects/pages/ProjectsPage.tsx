@@ -9,6 +9,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { useProfile } from '@/features/profile/hooks/useProfile';
 import { calculateCompatibility } from '@/services/matching/compatibility';
+import { EmptyState } from '@/components/shared/EmptyState';
+import { Search as SearchIcon } from 'lucide-react';
 
 const SKILL_FILTERS = ['All', 'React', 'TypeScript', 'Python', 'AI/ML', 'Design', 'Node.js', 'Rust', 'Go'];
 const URGENCY_FILTERS = ['All', 'high', 'medium', 'low'];
@@ -161,13 +163,13 @@ export function ProjectsPage() {
                     </div>
                 </AnimatePresence>
             ) : (
-                <div className="text-center py-20 bg-muted/10 rounded-xl border border-dashed">
-                    <h3 className="text-lg font-semibold">No projects found</h3>
-                    <p className="text-muted-foreground mb-4">
-                        {searchQuery || activeSkillFilter !== 'All' ? 'Try adjusting your filters.' : 'Be the first to create one!'}
-                    </p>
-                    <Button onClick={() => navigate('/projects/new')}>Create Project</Button>
-                </div>
+                <EmptyState
+                    icon={SearchIcon}
+                    title="No projects found"
+                    description={searchQuery || activeSkillFilter !== 'All' ? 'Try adjusting your filters.' : 'Be the first to create one!'}
+                    actionLabel="Create Project"
+                    onAction={() => navigate('/projects/new')}
+                />
             )}
         </div>
     );

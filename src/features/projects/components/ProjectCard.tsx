@@ -1,5 +1,7 @@
 import { Project } from '../types'
 import { Button } from '@/components/ui/button'
+import { SkillBadgeList } from '@/components/shared/SkillBadge'
+import { MatchScoreBadge } from '@/components/shared/MatchScoreBadge'
 import { Github, Users, ArrowRight } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
@@ -13,15 +15,15 @@ interface ProjectCardProps {
 }
 
 const urgencyConfig = {
-    high: { label: 'High Urgency', color: 'bg-red-100 text-red-700 border-red-200', dot: 'bg-red-500' },
-    medium: { label: 'Medium', color: 'bg-yellow-100 text-yellow-700 border-yellow-200', dot: 'bg-yellow-500' },
-    low: { label: 'Low Priority', color: 'bg-green-100 text-green-700 border-green-200', dot: 'bg-green-500' },
+    high: { label: 'High Urgency', color: 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800', dot: 'bg-red-500' },
+    medium: { label: 'Medium', color: 'bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800', dot: 'bg-yellow-500' },
+    low: { label: 'Low Priority', color: 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800', dot: 'bg-green-500' },
 }
 
 const statusConfig = {
-    open: { label: 'Open', color: 'bg-emerald-100 text-emerald-700' },
-    in_progress: { label: 'In Progress', color: 'bg-blue-100 text-blue-700' },
-    completed: { label: 'Completed', color: 'bg-gray-100 text-gray-600' },
+    open: { label: 'Open', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' },
+    in_progress: { label: 'In Progress', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
+    completed: { label: 'Completed', color: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400' },
 }
 
 export function ProjectCard({ project, matchScore }: ProjectCardProps) {
@@ -61,12 +63,7 @@ export function ProjectCard({ project, matchScore }: ProjectCardProps) {
                         </div>
                     </div>
                     {matchScore !== undefined && (
-                        <div className="flex-shrink-0 flex flex-col items-center">
-                            <div className={`text-lg font-bold ${matchScore >= 70 ? 'text-green-600' : matchScore >= 40 ? 'text-yellow-600' : 'text-muted-foreground'}`}>
-                                {matchScore}%
-                            </div>
-                            <div className="text-[9px] text-muted-foreground uppercase tracking-wider">Match</div>
-                        </div>
+                        <MatchScoreBadge score={matchScore} size="sm" />
                     )}
                 </div>
 
@@ -74,21 +71,7 @@ export function ProjectCard({ project, matchScore }: ProjectCardProps) {
                     {project.description}
                 </p>
 
-                <div className="flex flex-wrap gap-1.5">
-                    {project.required_skills?.slice(0, 4).map((skill) => (
-                        <span
-                            key={skill}
-                            className="inline-flex items-center rounded-md border border-primary/20 bg-primary/5 px-2 py-0.5 text-xs font-medium text-primary"
-                        >
-                            {skill}
-                        </span>
-                    ))}
-                    {(project.required_skills?.length || 0) > 4 && (
-                        <span className="text-xs text-muted-foreground px-1 py-0.5">
-                            +{(project.required_skills?.length || 0) - 4} more
-                        </span>
-                    )}
-                </div>
+                <SkillBadgeList skills={project.required_skills || []} maxVisible={4} />
 
                 <div className="flex items-center gap-3 text-xs text-muted-foreground pt-1">
                     {project.team_size && (
