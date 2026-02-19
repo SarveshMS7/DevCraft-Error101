@@ -3,24 +3,20 @@ An Intelligent Collaboration Platform that algorithmically matches people to pro
 
 A hackathon MVP for a platform that matches developers to projects based on skills, compatibility, and availability.
 
-## 🚀 Quick Start
-
-### 1. Install Dependencies
-\`\`\`bash
+🚀 Quick Start
+1️ Install Dependencies
 npm install
-\`\`\`
 
-### 2. Configure Environment
-Create a \`.env.local\` file (or use the existing \`.env\`) with your Supabase credentials:
-\`\`\`env
+2️ Configure Environment
+
+Create .env.local:
+
 VITE_SUPABASE_URL=https://zxuiqrdgmyvhhqnmkzfm.supabase.co
 VITE_SUPABASE_ANON_KEY=your_key_here
-\`\`\`
 
-### 3. Run Development Server
-\`\`\`bash
+3️ Run Development Server
 npm run dev
-\`\`\`
+
 
 ## 🏗 Project Structure
 
