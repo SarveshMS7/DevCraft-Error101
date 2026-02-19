@@ -121,7 +121,3 @@ You can extend it to:
 CollabSphere moves beyond static profile listings and enables **context-aware intelligent matchmaking** to help teams form faster and more effectively.
 
 ---
-
-## 📄 License
-
-MIT License
