@@ -1,4 +1,5 @@
-# CollabSphere — Context-Aware Skill Matching Platform
+#🌐 CollabSphere — Context-Aware Skill Matching Platform
+An Intelligent Collaboration Platform that algorithmically matches people to projects based on verified skills, complementary expertise, availability, and compatibility.
 
 A hackathon MVP for a platform that matches developers to projects based on skills, compatibility, and availability.
 
