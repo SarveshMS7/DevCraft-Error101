@@ -3,7 +3,7 @@ import { AuthProvider, useAuth } from "@/features/auth/AuthProvider";
 import { Toaster } from "@/components/ui/toaster";
 import { Layout } from "@/components/Layout";
 
-import { LandingPage } from "@/features/pages/LandingPage";
+import LandingPage from "@/features/landing-page/app/page";
 import { LoginPage } from "@/features/auth/pages/LoginPage";
 import { ProjectsPage } from "@/features/projects/pages/ProjectsPage";
 import { ProfilePage } from "@/features/profile/pages/ProfilePage";

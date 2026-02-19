@@ -22,9 +22,9 @@ export function Layout() {
           {/* Logo */}
           <Link
             to="/"
-            className="flex items-center gap-2 font-bold text-xl text-primary"
+            className="flex items-center gap-3 font-extrabold text-3xl tracking-tight text-primary"
           >
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-primary-foreground">
+            <div className="w-9 h-9 bg-primary rounded-lg flex items-center justify-center text-primary-foreground text-lg">
               C
             </div>
             CollabSphere
@@ -32,34 +32,53 @@ export function Layout() {
 
           {/* Navigation */}
           <nav className="hidden md:flex items-center gap-6">
+
+            {/* Home */}
+            <Link
+              to="/"
+              className={`flex items-center gap-1 text-sm font-medium transition-colors hover:text-primary ${
+                location.pathname === "/"
+                  ? "text-primary"
+                  : "text-muted-foreground"
+              }`}
+            >
+              
+              Home
+            </Link>
+
+            {/* Explore Projects */}
             <Link
               to="/projects"
-              className={`text-sm font-medium transition-colors hover:text-primary ${location.pathname.startsWith("/projects") ||
-                location.pathname === "/"
-                ? "text-primary"
-                : "text-muted-foreground"
-                }`}
+              className={`text-sm font-medium transition-colors hover:text-primary ${
+                location.pathname.startsWith("/projects")
+                  ? "text-primary"
+                  : "text-muted-foreground"
+              }`}
             >
               Explore Projects
             </Link>
 
+            {/* Explore Teams */}
             <Link
               to="/explore-teams"
-              className={`text-sm font-medium transition-colors hover:text-primary ${location.pathname.startsWith("/explore-teams")
-                ? "text-primary"
-                : "text-muted-foreground"
-                }`}
+              className={`text-sm font-medium transition-colors hover:text-primary ${
+                location.pathname.startsWith("/explore-teams")
+                  ? "text-primary"
+                  : "text-muted-foreground"
+              }`}
             >
               Explore Teams
             </Link>
 
+            {/* Profile */}
             {user && (
               <Link
                 to="/profile"
-                className={`text-sm font-medium transition-colors hover:text-primary ${location.pathname === "/profile"
-                  ? "text-primary"
-                  : "text-muted-foreground"
-                  }`}
+                className={`text-sm font-medium transition-colors hover:text-primary ${
+                  location.pathname === "/profile"
+                    ? "text-primary"
+                    : "text-muted-foreground"
+                }`}
               >
                 My Profile
               </Link>
@@ -70,7 +89,6 @@ export function Layout() {
           <div className="flex items-center gap-4">
             {user ? (
               <>
-                {/* Create Team */}
                 <Button
                   size="sm"
                   variant="secondary"
@@ -81,7 +99,6 @@ export function Layout() {
                   Create Team
                 </Button>
 
-                {/* New Project */}
                 <Button
                   size="sm"
                   variant="default"
@@ -92,10 +109,8 @@ export function Layout() {
                   New Project
                 </Button>
 
-                {/* Notification Bell */}
                 <NotificationBell />
 
-                {/* Profile + Logout */}
                 <div className="flex items-center gap-2">
                   <Button
                     variant="ghost"
@@ -134,7 +149,7 @@ export function Layout() {
 
       <footer className="border-t py-6 bg-card">
         <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
-          © 2024 CollabSphere. Built for the Hackathon.
+          © 2026 CollabSphere. Built for the Hackathon.
         </div>
       </footer>
     </div>
