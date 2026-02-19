@@ -130,7 +130,7 @@ export function Layout() {
 
       <footer className="border-t py-6 bg-card">
         <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
-          © 2024 CollabSphere. Built for the Hackathon.
+          © 2026 CollabSphere. Built for the Hackathon.
         </div>
       </footer>
     </div>
