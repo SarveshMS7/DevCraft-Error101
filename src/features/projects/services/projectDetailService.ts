@@ -84,7 +84,7 @@ export function subscribeToMessages(
 export async function fetchJoinRequests(projectId: string) {
     const { data, error } = await supabase
         .from('join_requests')
-        .select('*, profiles(full_name, avatar_url)')
+        .select('*, profiles(full_name, avatar_url, skills)')
         .eq('project_id', projectId);
 
     if (error) throw error;

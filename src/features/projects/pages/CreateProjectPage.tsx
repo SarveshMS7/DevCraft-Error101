@@ -48,7 +48,8 @@ export function CreateProjectPage() {
 
         try {
             setLoading(true);
-            await createProject({
+
+            const createdProject: any = await createProject({
                 title: formData.title,
                 description: formData.description,
                 required_skills: formData.required_skills,
@@ -57,7 +58,12 @@ export function CreateProjectPage() {
                 owner_id: user.id,
                 status: 'open'
             } as any);
-            navigate('/projects');
+
+            if (createdProject?.id) {
+                navigate(`/projects/${createdProject.id}`);
+            } else {
+                navigate('/projects');
+            }
         } catch (error) {
             // Error handled by hook
         } finally {

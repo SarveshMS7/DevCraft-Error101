@@ -15,7 +15,7 @@ export const projectsApi = {
     async getById(id: string) {
         const { data, error } = await supabase
             .from('projects')
-            .select('*, profiles(full_name, avatar_url)')
+            .select('*, profiles(full_name, avatar_url, skills)')
             .eq('id', id)
             .single()
 
