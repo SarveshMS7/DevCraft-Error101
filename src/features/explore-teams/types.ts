@@ -86,6 +86,7 @@ export interface ExploreTeam {
 
     // Computed metadata
     member_count: number;
+    members?: { avatar_url: string | null; username: string | null; skills: string[] }[];
     open_roles: number;
     activity_score: number;   // 0-100 based on recent activity
 

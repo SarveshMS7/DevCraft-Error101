@@ -2,11 +2,14 @@ import { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { useProjectDetail } from '../hooks/useProjectDetail';
+import { useTeamMembers } from '../hooks/useTeamMembers';
 import { useProfile } from '@/features/profile/hooks/useProfile';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Skeleton } from '@/components/ui/skeleton';
+import { TeamMembersList } from '@/features/projects/components/teams/TeamMembersList';
 import {
     MessageSquare,
     UserPlus,
@@ -30,6 +33,7 @@ export function ProjectDetailPage() {
     const navigate = useNavigate();
     const { user } = useAuth();
     const { project, loading, messages, joinRequests, sendMessage, submitJoinRequest, respondToJoinRequest } = useProjectDetail(id!);
+    const { team: teamMembersData, loading: membersLoading } = useTeamMembers(id!);
     const { profile } = useProfile();
 
     const [chatMessage, setChatMessage] = useState('');
@@ -295,65 +299,23 @@ export function ProjectDetailPage() {
                         <h3 className="font-semibold text-lg flex items-center">
                             <Users className="w-5 h-5 mr-2 text-primary" /> Team Members & Skills
                         </h3>
-                        <div className="space-y-4">
-                            {/* Owner */}
-                            <div className="p-4 border rounded-xl space-y-3 bg-muted/20">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold border border-primary/20">
-                                        {(project as any).profiles?.full_name?.charAt(0) || 'O'}
-                                    </div>
-                                    <div>
-                                        <p className="font-medium text-sm flex items-center gap-2">
-                                            {(project as any).profiles?.full_name || 'Project Owner'}
-                                            <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full border border-primary/20 font-semibold tracking-wide uppercase">
-                                                Owner
-                                            </span>
-                                        </p>
-                                        <div className="flex flex-wrap gap-1 mt-1.5">
-                                            {(project as any).profiles?.skills?.map((skill: string) => (
-                                                <SkillBadge key={skill} skill={skill} size="sm" variant="outline" className="text-[10px] py-0 h-5" />
-                                            ))}
-                                            {!(project as any).profiles?.skills?.length && (
-                                                <span className="text-xs text-muted-foreground italic">No skills listed</span>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
+                        {membersLoading ? (
+                            <div className="space-y-4">
+                                <Skeleton className="h-24 w-full" />
+                                <Skeleton className="h-24 w-full" />
                             </div>
-
-                            {/* Members */}
-                            {joinRequests.filter(r => r.status === 'accepted').map((member: any) => (
-                                <div key={member.id} className="p-4 border rounded-xl space-y-3 bg-muted/5">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center font-bold text-muted-foreground border">
-                                            {member.profiles?.full_name?.charAt(0) || 'U'}
-                                        </div>
-                                        <div>
-                                            <p className="font-medium text-sm flex items-center gap-2">
-                                                {member.profiles?.full_name || 'Member'}
-                                                <span className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full border font-medium uppercase">
-                                                    Member
-                                                </span>
-                                            </p>
-                                            <div className="flex flex-wrap gap-1 mt-1.5">
-                                                {member.profiles?.skills?.map((skill: string) => (
-                                                    <SkillBadge key={skill} skill={skill} size="sm" variant="outline" className="text-[10px] py-0 h-5" />
-                                                ))}
-                                                {!member.profiles?.skills?.length && (
-                                                    <span className="text-xs text-muted-foreground italic">No skills listed</span>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-
-                            {joinRequests.filter(r => r.status === 'accepted').length === 0 && (
-                                <p className="text-sm text-muted-foreground text-center py-2 italic">
-                                    No other members yet.
-                                </p>
-                            )}
-                        </div>
+                        ) : (
+                            <TeamMembersList
+                                members={teamMembersData?.members || []}
+                                variant="full"
+                                className="grid-cols-1 md:grid-cols-1 lg:grid-cols-1"
+                            />
+                        )}
+                        {!membersLoading && (!teamMembersData || teamMembersData.members.length === 0) && (
+                            <p className="text-sm text-muted-foreground text-center py-2 italic">
+                                No members found.
+                            </p>
+                        )}
                     </div>
 
                     {/* Skills Gap (Placeholder) */}

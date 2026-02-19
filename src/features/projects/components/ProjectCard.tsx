@@ -2,8 +2,26 @@ import { Project } from '../types'
 import { Button } from '@/components/ui/button'
 import { SkillBadgeList } from '@/components/shared/SkillBadge'
 import { MatchScoreBadge } from '@/components/shared/MatchScoreBadge'
-import { Github, Users, ArrowRight } from 'lucide-react'
+import { Github, Users, ArrowRight, ChevronDown, ChevronUp } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import { useState } from 'react'
+import { useTeamMembers } from '../hooks/useTeamMembers'
+import { TeamMembersList } from './teams/TeamMembersList'
+import { Skeleton } from '@/components/ui/skeleton'
+
+function ProjectCardMembers({ projectId }: { projectId: string }) {
+    const { team, loading } = useTeamMembers(projectId)
+
+    if (loading) return <Skeleton className="h-12 w-full mt-4" />
+
+    if (!team || team.members.length === 0) return <p className="text-xs text-muted-foreground mt-4 italic">No members found.</p>
+
+    return (
+        <div className="mt-4 pt-4 border-t">
+            <TeamMembersList members={team.members} variant="compact" />
+        </div>
+    )
+}
 
 interface ProjectCardProps {
     project: Project & {
@@ -28,8 +46,10 @@ const statusConfig = {
 
 export function ProjectCard({ project, matchScore }: ProjectCardProps) {
     const navigate = useNavigate()
+    const [expanded, setExpanded] = useState(false)
     const urgency = project.urgency ? urgencyConfig[project.urgency] : null
     const status = project.status ? statusConfig[project.status] : statusConfig.open
+    const memberCount = (project as any).project_members?.[0]?.count || 0
 
     return (
         <div
@@ -73,16 +93,29 @@ export function ProjectCard({ project, matchScore }: ProjectCardProps) {
 
                 <SkillBadgeList skills={project.required_skills || []} maxVisible={4} />
 
-                <div className="flex items-center gap-3 text-xs text-muted-foreground pt-1">
+                <div className="flex items-center gap-3 text-xs text-muted-foreground pt-1 flex-wrap">
                     {project.team_size && (
-                        <span className="flex items-center gap-1">
-                            <Users className="w-3 h-3" /> {project.team_size} members
-                        </span>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 px-2 text-xs font-normal text-muted-foreground hover:text-primary hover:bg-transparent -ml-2"
+                            onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
+                        >
+                            <Users className="w-3 h-3 mr-1.5" />
+                            <span className="mr-1">{memberCount}/{project.team_size} members</span>
+                            {expanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                        </Button>
                     )}
                     {project.profiles?.full_name && (
                         <span className="truncate">by {project.profiles.full_name}</span>
                     )}
                 </div>
+
+                {expanded && (
+                    <div onClick={(e) => e.stopPropagation()}>
+                        <ProjectCardMembers projectId={project.id} />
+                    </div>
+                )}
             </div>
 
             <div className="flex items-center gap-2 px-5 pb-4 mt-auto">

@@ -97,13 +97,14 @@ export async function getExploreTeams(
 
     const projects = (data || []) as unknown as ProjectRow[];
 
-    // 8) Fetch member counts for all returned projects in a single query
+    // 8) Fetch member details for all returned projects in a single query
     const projectIds = projects.map((p) => p.id);
-    const memberCounts = await getMemberCounts(projectIds);
+    const memberDetails = await getMemberDetails(projectIds);
 
     // 9) Map to ExploreTeam shape
     const teams: ExploreTeam[] = projects.map((p) => {
-        const memberCount = memberCounts.get(p.id) || 0;
+        const details = memberDetails.get(p.id) || { count: 0, members: [] };
+        const memberCount = details.count;
         const teamCapacity = p.team_size || 4;
         const openRoles = Math.max(0, teamCapacity - memberCount);
 
@@ -119,6 +120,7 @@ export async function getExploreTeams(
             team_size: p.team_size,
             owner: p.profiles || undefined,
             member_count: memberCount,
+            members: details.members,
             open_roles: openRoles,
             activity_score: computeActivityScore(p),
         };
@@ -175,24 +177,46 @@ export async function getPersonalizedTeams(
 // ─── Internal Helpers ────────────────────────────────────────
 
 /**
- * Fetch member counts for a batch of project IDs.
+ * Fetch member details for a batch of project IDs.
  * Single query avoids N+1.
  */
-async function getMemberCounts(projectIds: string[]): Promise<Map<string, number>> {
-    const map = new Map<string, number>();
+async function getMemberDetails(projectIds: string[]): Promise<Map<string, { count: number; members: { avatar_url: string | null; username: string | null; skills: string[] }[] }>> {
+    const map = new Map<string, { count: number; members: any[] }>();
     if (projectIds.length === 0) return map;
 
     const { data, error } = await supabase
         .from('project_members')
-        .select('project_id')
+        .select(`
+            project_id,
+            profiles:user_id (
+                username,
+                full_name,
+                avatar_url,
+                skills
+            )
+        `)
         .in('project_id', projectIds);
 
     if (error || !data) return map;
 
     // Count occurrences of each project_id
-    for (const row of data) {
-        const pid = (row as any).project_id as string;
-        map.set(pid, (map.get(pid) || 0) + 1);
+    for (const row of (data as any[])) {
+        const pid = row.project_id as string;
+        const profile = row.profiles;
+
+        const entry = map.get(pid) || { count: 0, members: [] };
+
+        entry.count++;
+        // Limit to 5 members per project
+        if (entry.members.length < 5) {
+            entry.members.push({
+                avatar_url: profile.avatar_url,
+                username: profile.full_name || profile.username,
+                skills: profile.skills || []
+            });
+        }
+
+        map.set(pid, entry);
     }
 
     return map;

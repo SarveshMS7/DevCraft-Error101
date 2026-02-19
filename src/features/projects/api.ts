@@ -67,7 +67,7 @@ export const projectsApi = {
     async getUserProjects(userId: string) {
         const { data, error } = await supabase
             .from('projects')
-            .select('*, profiles(full_name, avatar_url)')
+            .select('*, profiles(full_name, avatar_url), project_members(count)')
             .eq('owner_id', userId)
             .order('created_at', { ascending: false })
 

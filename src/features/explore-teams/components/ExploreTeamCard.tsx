@@ -10,6 +10,7 @@
 
 import { Users, Clock, ArrowRight, Briefcase, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { SkillBadgeList } from '@/components/shared/SkillBadge';
 import { MatchScoreBadge } from '@/components/shared/MatchScoreBadge';
 import { useNavigate } from 'react-router-dom';
@@ -92,11 +93,32 @@ export function ExploreTeamCard({ team }: ExploreTeamCardProps) {
                 />
 
                 {/* Metadata Row */}
-                <div className="flex items-center gap-4 text-xs text-muted-foreground pt-1">
-                    <span className="flex items-center gap-1">
-                        <Users className="w-3.5 h-3.5" />
-                        {team.member_count}/{team.team_size || '?'}
-                    </span>
+                {/* Metadata Row - flexible height, wraps if needed */}
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground pt-1 min-h-[1.75rem]">
+                    {team.members && team.members.length > 0 ? (
+                        <div className="flex items-center -space-x-2 mr-1 shrink-0">
+                            {team.members.slice(0, 3).map((m, i) => (
+                                <div key={i} className="relative group/avatar" title={`${m.username} • ${m.skills?.join(', ') || ''}`}>
+                                    <Avatar className="h-6 w-6 border rounded-full ring-2 ring-background hover:z-10 hover:ring-primary/20 transition-all shrink-0">
+                                        <AvatarImage src={m.avatar_url || ''} />
+                                        <AvatarFallback className="text-[8px] bg-muted flex items-center justify-center w-full h-full">
+                                            {m.username?.charAt(0).toUpperCase()}
+                                        </AvatarFallback>
+                                    </Avatar>
+                                </div>
+                            ))}
+                            {team.member_count > 3 && (
+                                <div className="h-6 w-6 rounded-full bg-muted border ring-2 ring-background flex items-center justify-center text-[9px] font-medium z-0 shrink-0" title={`+${team.member_count - 3} more`}>
+                                    +{team.member_count - 3}
+                                </div>
+                            )}
+                        </div>
+                    ) : (
+                        <span className="flex items-center gap-1 shrink-0">
+                            <Users className="w-3.5 h-3.5" />
+                            {team.member_count}/{team.team_size || '?'}
+                        </span>
+                    )}
 
                     {team.open_roles > 0 && (
                         <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
